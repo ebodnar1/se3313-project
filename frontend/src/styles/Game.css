@@ -1,0 +1,64 @@
+.letter-input {
+    height: 20px;
+    font-family: inherit;
+    width: 20px;
+    background-color: inherit;
+    color: white;
+    border: none;
+    border-bottom: 2px solid rgb(255, 255, 255);
+    font-size: 20px;
+    padding: 10px;
+    caret-color: transparent;
+    text-align: center;
+}
+
+.letter-input:focus {
+    outline: none;
+}
+
+.display-word {
+    display: inline-block;
+    width: 30px;
+    font-size: 25px;
+}
+
+.incorrect-letter-box {
+    display: inline-block;
+    width: 80px;
+    text-align: left;
+    padding-left: 5px;
+    padding-top: 10px;
+}
+
+.incorrect-letter {
+    display: inline-block;
+    width: 20px;
+    color: #e75a5a;
+}
+
+.stickman-logo {
+    height: 40vmin;
+    pointer-events: none;
+}
+
+.flex-container {
+    display: flex;
+    justify-content: center;
+    padding: none;
+}
+
+.feedback-block {
+    margin-bottom: 15px;
+}
+
+.success-msg {
+    color: #166b02;
+}
+
+.failure-msg {
+    color: #e75a5a
+}
+
+.sub-msg {
+    font-size: 18px;
+}
