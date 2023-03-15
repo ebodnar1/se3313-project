@@ -8,9 +8,9 @@ import stage5 from './assets/stage-5.png'
 import './styles/Game.css'
 import { getRandomWord } from './assets/words';
 
-const Game = () => {
+const Game = ({enabled, chosenWord, timeRemaining}) => {
     const MAX_GUESSES = 5;
-    const [word, setWord] = useState(getRandomWord())
+    const [word, setWord] = useState(chosenWord)
     const [letter, setLetter] = useState('')
     const [guessedLetters, setGuessedLetters] = useState({})
     const [correct, setCorrect] = useState({})
@@ -31,49 +31,45 @@ const Game = () => {
     }
 
     const resetState = () => {
-        setWord(getRandomWord())
+        setNeed(countUniqueLetters(chosenWord))
+        setWord(chosenWord)
         setLetter('')
         setGuessedLetters({})
         setCorrect({})
         setImage(stickman)
         setIncorrect(0)
-        setNeed(-1)
         setSuccessText('')
         setFailureText('')
         setGuessingEnabled(true)
     }
 
     useEffect(() => {
-        console.log(`${need} needed, ${incorrect} incorrect`)
-        console.log(correct)
-    }, [incorrect, need, correct])
-
-    useEffect(() => {
-        console.log(guessedLetters)
-    }, [guessedLetters])
+        resetState()
+    }, [enabled])
 
     useEffect(() => {
         setNeed(countUniqueLetters(word))
     }, [word])
 
     useEffect(() => {
+        console.log(`Have need ${need}`)
         if(need === 0){
             setSuccessText("You Win!")
             setGuessingEnabled(false)
             setTimeout(() => {
                 resetState()
-            }, 3000)
+            }, 3000) //timeRemaining * 1000
         }
     }, [need])
 
     useEffect(() => {
         setImage(stageMap[incorrect])
-        if(incorrect === 5){
+        if(incorrect === MAX_GUESSES){
             setFailureText("You Lost!")
             setGuessingEnabled(false)
             setTimeout(() => {
                 resetState()
-            }, 3000)
+            }, 3000) //timeRemaining * 1000
         }
     }, [incorrect])
 
@@ -129,14 +125,31 @@ const Game = () => {
         setLetter("")
     }
 
+    if(!enabled) {
+        return (
+            <div className='App-header'>
+                <div className='waiting-text'>
+                    Round is over, player is choosing word
+                </div>
+            </div>
+        )
+    }
     return (
-        <div>
+        <div className='App-header flex-display'>
             {successText && <div className='feedback-block success-msg'>{successText}</div>}
             {failureText && <div className='feedback-block'>
                 <div className='failure-msg'>{failureText}</div>
                 <div className='sub-msg'>The word was {word}</div>
             </div>}
             {!successText && !failureText && <div>
+                <div className='game-board flex-container'>
+                    {/*
+                        Map through the other users' scores and display the corresponding hangmen
+                        Display the leaders first? - assuming infinitely many people can join the room
+                    */}
+                </div>
+            </div>}
+            {!successText && !failureText && <div className='test'>
                 <div className='flex-container'>
                     <div className='incorrect-letter-box'>{Object.keys(guessedLetters).map((letter) => {return <div className='incorrect-letter'>{letter}</div>})}</div>
                     <img src={image} className="stickman-logo"/>

@@ -37,12 +37,16 @@
 }
 
 .stickman-logo {
-    height: 40vmin;
+    height: 50vmin;
     pointer-events: none;
 }
 
+.logo-sm {
+    height: 12vmin;
+}
+
 .flex-container {
-    display: flex;
+    display: inline-flex;
     justify-content: center;
     padding: none;
 }
@@ -61,4 +65,62 @@
 
 .sub-msg {
     font-size: 18px;
+}
+
+.word-input {
+    font-size: inherit;
+    background-color: transparent;
+    border: none;
+    border: 1px solid white;
+    border-radius: 8px;
+    color: white;
+    padding: 5px;
+    font-family: inherit;
+    width: 300px;
+    display: inline-block;
+}
+
+.word-input:focus {
+    outline: none;
+}
+
+.word-input-label {
+    padding: 2px;
+    text-align: left;
+    display: inline-block;
+}
+
+.word-input-box {
+    width: 300px;
+}
+
+.word-input-button {
+    width: 140px;
+    font-family: inherit;
+    background-color: transparent;
+    border: 1px solid white;
+    border-radius: 8px;
+    color: white;
+    font-size: 18px;
+    margin: 5px;
+    margin-top: 10px;
+}
+
+.waiting-text {
+    font-size: 28px;
+}
+
+.game-board {
+    display: inline-flex;
+    float: left;
+    width: 250px;
+}
+
+.test {
+
+}
+
+.flex-display {
+    display: inline-flex;
+    width: 100%;
 }
