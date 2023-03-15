@@ -5,6 +5,7 @@ import ChooseWord from './ChooseWord';
 import Layout from './Layout';
 import { useEffect, useState } from 'react';
 import { getRandomWord } from './assets/words';
+import Home from './Home';
 
 const MAX_CHOOSE_TIME = 20;
 const MAX_GUESS_TIME = 30;
@@ -68,7 +69,8 @@ function App() {
       <BrowserRouter>
           <Routes>
             <Route path='/' element={<Layout round={round} timeRemaining={gameState == 0 ? chooseTime : guessTime} gameState={gameState}/>}>
-              <Route index element={<Game enabled={gameState === 1} chosenWord={word} timeRemaining={guessTime}/>}></Route>
+              <Route index element={<Home/>}></Route>
+              <Route path='game' element={<Game enabled={gameState === 1} chosenWord={word} timeRemaining={guessTime}/>}></Route>
               <Route path='choose' element={<ChooseWord chooseWord={updateWord} enabled={gameState === 0}/>}></Route>
             </Route>
           </Routes>
