@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import stickman from './assets/stickman.png'
-import stage1 from './assets/stage-1.png'
-import stage2 from './assets/stage-2.png'
-import stage3 from './assets/stage-3.png'
-import stage4 from './assets/stage-4.png'
-import stage5 from './assets/stage-5.png'
-import './styles/Game.css'
-import { getRandomWord } from './assets/words';
+import stickman from '../assets/stickman.png'
+import stage1 from '../assets/stage-1.png'
+import stage2 from '../assets/stage-2.png'
+import stage3 from '../assets/stage-3.png'
+import stage4 from '../assets/stage-4.png'
+import stage5 from '../assets/stage-5.png'
+import '../styles/Game.css'
+import { getRandomWord } from '../assets/words';
 
 const Game = ({enabled, chosenWord, timeRemaining}) => {
     const MAX_GUESSES = 5;
@@ -58,7 +58,7 @@ const Game = ({enabled, chosenWord, timeRemaining}) => {
             setGuessingEnabled(false)
             setTimeout(() => {
                 resetState()
-            }, 3000) //timeRemaining * 1000
+            }, timeRemaining * 1000)
         }
     }, [need])
 
@@ -69,7 +69,7 @@ const Game = ({enabled, chosenWord, timeRemaining}) => {
             setGuessingEnabled(false)
             setTimeout(() => {
                 resetState()
-            }, 3000) //timeRemaining * 1000
+            }, timeRemaining * 1000) 
         }
     }, [incorrect])
 

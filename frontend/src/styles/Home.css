@@ -12,9 +12,14 @@
     margin-top: 50px;
 }
 
+.join-header {
+    margin: 0;
+    padding-top: 10px;
+}
+
 .home-header {
     background-color: #282c34;
-    min-height: calc(100vh - 50px);
+    min-height: 100vh;
     text-align: center;
 }
 
@@ -34,14 +39,25 @@
     font-weight: 500;
     border-bottom: 1px solid white;
     padding: 2px 0px;
+    height: 32px;
 }
 
 .game-body {
     padding: 5px 0px;
     font-size: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: calc(100% - 47px);
+}
+
+.join-button-container {
+    margin-top: auto;
 }
 
 .join-game-button {
+    margin: 0 auto;
+    margin-bottom: 5px;
     background-color: transparent;
     border: 1px solid white;
     border-radius: 5px;
@@ -49,7 +65,6 @@
     font-family: inherit;
     width: 5vw;
     height: 5vh;
-    margin-top: 15px;
 }
 
 .join-game-button:hover {
@@ -68,6 +83,10 @@
     color: black;
     z-index: 10;
     border-radius: 10px;
+}
+
+.large-modal {
+    height: 270px;
 }
 
 .username-input {
@@ -112,6 +131,10 @@
     flex-direction: column;
     justify-content: space-between;
     height: calc(200px - 53px);
+}
+
+.modal-content-large {
+    height: calc(270px - 53px);
 }
 
 .modal-content > div {
@@ -162,4 +185,20 @@
     right: 0;
     opacity: 0.9;
     backdrop-filter: blur(500px);
+}
+
+.create-room {
+    background-color: transparent;
+    border: 1px solid white;
+    padding: 5px 20px;
+    font-family: inherit;
+    font-size: 19px;
+    color: white;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.create-room:hover {
+    border-color: #6bbaae;
+    color: #6bbaae;
 }

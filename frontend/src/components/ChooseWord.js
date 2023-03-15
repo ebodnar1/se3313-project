@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import './styles/Game.css'
-import { getRandomWord } from './assets/words';
+import '../styles/Game.css'
+import { getRandomWord } from '../assets/words';
 
-const ChooseWord = ({chooseWord, enabled}) => {
+const ChooseWord = ({chooseWord, enabled, finishTimer}) => {
     const [word, setWord] = useState('')
 
     useEffect(() => {
@@ -15,11 +15,12 @@ const ChooseWord = ({chooseWord, enabled}) => {
 
     const chooseRandom = () => {
         const word = getRandomWord();
-        setWord(getRandomWord())
+        setWord(word)
     }
 
     const handleSubmit = () => {
         chooseWord(word)
+        finishTimer()
     }
 
     const updateWord = (w) => {

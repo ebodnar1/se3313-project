@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import './styles/Header.css'
+import '../styles/Header.css'
 
 const HeaderBar = ({round, timeRemaining, gameState}) => {
     return (

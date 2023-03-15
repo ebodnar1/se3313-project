@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import './styles/Home.css'
+import '../styles/Home.css'
 
-const Modal = ({enabled, setEnabled, title}) => {
+const Modal = ({enabled, setEnabled, title, creating}) => {
     if(!enabled) return null;
     return (
-        <div className='modal'>
+        <div className={creating ? 'modal large-modal' : 'modal'}>
             <div>
-                <div className='join-game-header'>Join game {title}</div>
-                <div className='modal-content'>
+                <div className='join-game-header'>{creating ? "Create" : "Join"} game {creating ? "" : title}</div>
+                <div className={creating ? 'modal-content modal-content-large' : 'modal-content'}>
+                    {creating && <div className='modal-text'>
+                        <label className='join-game-label'>Enter the room name:</label>
+                        <input className='username-input' maxLength={15}></input>
+                    </div>}
                     <div className='modal-text'>
                         <label className='join-game-label'>Enter your username:</label>
                         <input className='username-input' maxLength={15}></input>
