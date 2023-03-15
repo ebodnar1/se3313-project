@@ -56,3 +56,110 @@
     color: #6bbaae;
     border-color: #6bbaae;
 }
+
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    height: 200px;
+    background: white;
+    color: black;
+    z-index: 10;
+    border-radius: 10px;
+}
+
+.username-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #282c34;
+    font-family: inherit;
+    font-size: inherit;
+    margin-top: 5px;
+    padding: 2px;
+    width: 70%;
+}
+
+.username-input:focus { 
+    border-color: #2e55a5;
+}
+
+*:focus {
+    outline: none;
+}
+
+.join-game-header {
+    width: 100%;
+    border-bottom: 1px solid #282c34;
+    padding: 10px 0;
+    font-size: 22px;
+    color: #282c34;
+    height: 32px;
+}
+
+.join-game-label {
+    margin: 0 auto;
+    display: block;
+    width: 70%;
+    text-align: left;
+    margin-bottom: 0;
+    margin-top: 20px;
+}
+
+.modal-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: calc(200px - 53px);
+}
+
+.modal-content > div {
+    flex-shrink: 0;
+}
+
+.modal-text {
+    width: 100%;
+}
+
+.modal-buttons {
+    width: 100%;
+    margin-top: auto;
+    padding-bottom: 15px;
+    display: flex;
+    justify-content: space-around;
+}
+
+.modal-button {
+    background-color: transparent;
+    border: 1px solid #282c34;
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: inherit;
+    width: 200px;
+    height: 30px;
+    color: #282c34;
+}
+
+.modal-button:hover { 
+    color: #2e55a5;
+    border-color: #2e55a5;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+.overlay-opacity {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    opacity: 0.9;
+    backdrop-filter: blur(500px);
+}
