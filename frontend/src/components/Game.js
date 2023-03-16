@@ -7,8 +7,9 @@ import stage4 from '../assets/stage-4.png'
 import stage5 from '../assets/stage-5.png'
 import '../styles/Game.css'
 import { getRandomWord } from '../assets/words';
+import { socket } from '../socket';
 
-const Game = ({enabled, chosenWord, timeRemaining}) => {
+const Game = ({enabled, chosenWord, timeRemaining, roomName, username, players}) => {
     const MAX_GUESSES = 5;
     const [word, setWord] = useState(chosenWord)
     const [letter, setLetter] = useState('')
@@ -56,6 +57,7 @@ const Game = ({enabled, chosenWord, timeRemaining}) => {
         if(need === 0){
             setSuccessText("You Win!")
             setGuessingEnabled(false)
+            socket.emit('correct', {roomName: roomName, username: username})
             setTimeout(() => {
                 resetState()
             }, timeRemaining * 1000)
@@ -101,7 +103,7 @@ const Game = ({enabled, chosenWord, timeRemaining}) => {
     }
 
     const handleGuess = (g) => {
-        const guess = g.target.value;
+        const guess = g.target.value.toLowerCase();
         if(!guessingEnabled) {
             setLetter("")
             return;
@@ -120,6 +122,7 @@ const Game = ({enabled, chosenWord, timeRemaining}) => {
             const temp = {...guessedLetters}
             temp[guess] = 1;
             setGuessedLetters(temp)
+            socket.emit('life', {roomName: roomName, username: username})
         }
 
         setLetter("")
@@ -143,10 +146,16 @@ const Game = ({enabled, chosenWord, timeRemaining}) => {
             </div>}
             {!successText && !failureText && <div>
                 <div className='game-board flex-container'>
-                    {/*
-                        Map through the other users' scores and display the corresponding hangmen
-                        Display the leaders first? - assuming infinitely many people can join the room
-                    */}
+                    {players && players.map(player => {
+                        return ( 
+                            !player.chooser &&
+                            player.username !== username &&
+                            <div>
+                                <img src={stageMap[player.lives]} className="stickman-logo logo-sm"/>
+                                <div>{player.username}</div>
+                            </div>
+                        )
+                    })}
                 </div>
             </div>}
             {!successText && !failureText && <div className='test'>

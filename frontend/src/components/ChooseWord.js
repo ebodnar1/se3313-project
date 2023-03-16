@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import '../styles/Game.css'
 import { getRandomWord } from '../assets/words';
+import { socket } from '../socket';
 
 const ChooseWord = ({chooseWord, enabled, finishTimer}) => {
     const [word, setWord] = useState('')
@@ -14,17 +15,18 @@ const ChooseWord = ({chooseWord, enabled, finishTimer}) => {
     }
 
     const chooseRandom = () => {
-        const word = getRandomWord();
-        setWord(word)
+        const w = getRandomWord();
+        setWord(w)
+        chooseWord(w)
     }
 
     const handleSubmit = () => {
         chooseWord(word)
-        finishTimer()
+        //finishTimer()
     }
 
     const updateWord = (w) => {
-        setWord(w.target.value)
+        setWord(w.target.value.toLowerCase())
     }
 
     if(!enabled) {

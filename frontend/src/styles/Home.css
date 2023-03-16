@@ -63,8 +63,8 @@
     border-radius: 5px;
     color: white;
     font-family: inherit;
-    width: 5vw;
-    height: 5vh;
+    width: 15%;
+    height: 100%;
 }
 
 .join-game-button:hover {
