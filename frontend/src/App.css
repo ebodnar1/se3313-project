@@ -25,6 +25,10 @@
   color: white;
 }
 
+.App-header-ext {
+  height: 100vh;
+}
+
 .App-link {
   color: #61dafb;
 }

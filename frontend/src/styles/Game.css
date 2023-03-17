@@ -42,7 +42,18 @@
 }
 
 .logo-sm {
-    height: 12vmin;
+    height: 15vmin;
+}
+
+.logo-container {
+    border: 1px solid green;
+    margin: 10px;
+    padding: 0 10px;
+}
+
+.logo-username {
+    font-size: 17px;
+    font-weight: 100;
 }
 
 .flex-container {
@@ -119,4 +130,27 @@
 .flex-display {
     display: inline-flex;
     width: 100%;
+}
+
+.round-score {
+    margin-bottom: 20px;
+}
+
+.left-item {
+    border: 1px solid white;
+    display: inline-block;
+    width: 300px;
+    margin-top: -1px;
+}
+
+.right-item {
+    border: 1px solid white;
+    display: inline-block;
+    width: 100px;
+    margin-left: -1px;
+    margin-top: -1px;
+}
+
+.scores-title {
+    margin-bottom: 5px;
 }

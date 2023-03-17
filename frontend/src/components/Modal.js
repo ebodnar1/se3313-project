@@ -7,13 +7,11 @@ const Modal = ({enabled, setEnabled, title, creating}) => {
     const [username, setUsername] = useState('')
 
     const handleRoomConnect = () => {
-        console.log("Submitted join room")
         socket.emit('join', {roomName: title, username: username})
         setEnabled(false)
     }
 
     const handleSocketCreate = () => {
-        console.log("Submitted create room")
         socket.emit('create', {roomName: roomName, username: username})
         setEnabled(false)
     }

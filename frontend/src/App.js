@@ -9,14 +9,15 @@ import Home from "./components/Home";
 import MainGame from "./components/MainGame";
 import { socket } from './socket.js'
 
+const MAX_TIME = 55;
 function App() {
   const navigate = useNavigate();
-  const [connected, setConnected] = useState(false)
+  const [connected, setConnected] = useState(true)
   const [rooms, setRooms] = useState([])
-  const [timer, setTimer] = useState(-1)
-  const [isChooser, setIsChooser] = useState(-1);
+  const [timer, setTimer] = useState(65)
+  const [isChooser, setIsChooser] = useState(0);
   const [roomName, setRoomName] = useState('');
-  const [chosenWord, setChosenWord] = useState('');
+  const [chosenWord, setChosenWord] = useState(getRandomWord());
   const [round, setRound] = useState(1);
   const [started, setStarted] = useState(false)
   const [players, setPlayers] = useState([])
@@ -24,14 +25,22 @@ function App() {
   const [endRound, setEndRound] = useState(false)
   const [score, setScore] = useState(0)
   const [incScore, setIncScore] = useState(0)
+  const [gameOver, setGameOver] = useState(false)
+  const [disconnected, setDisconnected] = useState(false)
+  const [errorMessage, setErrorMessage] = useState(false)
 
   useEffect(() => {
-    console.log(`Username is now ${username}`)
-  }, [username])
+    navigate('/')
+  }, [disconnected])
 
   useEffect(() => {
-    console.log(rooms)
-  }, [rooms])
+    if(!username) return;
+    socket.emit('leave', {username: username})
+  }, [])
+
+  useEffect(() => {
+    if(timer === MAX_TIME) setChosenWord(getRandomWord())
+  }, [timer])
 
   useEffect(() => {
     //if(!connected) return;
@@ -45,46 +54,42 @@ function App() {
   useEffect(() => {
     const onConnect = () => {
       console.log(`Connected to ${socket.id}`);
-      setConnected(true)
     };
 
     const onDisconnect = () => {
       console.log(`Disconnected from socket`);
-      setConnected(false)
     };
 
     const onCreateEvent = ({room, roundNo, user}) => {
-      console.log("Called create")
       setRoomName(room)
       setRound(roundNo)
       setUsername(user)
       navigate('/game', {state: {started: false}})
     };
 
-    const onJoinEvent = ({room}) => {
-      console.log("Called join")
-      socket.emit('startgame', {roomName: room})
-      setStarted(true)
+    const onJoinEvent = ({room, qty}) => {
+      if(qty > 1){ 
+        socket.emit('startgame', {roomName: room})
+        setStarted(true)
+      }
+      else setStarted(false)
     };
 
     const onRoomsEvent = (r) => {
-      console.log("Loaded new rooms")
-      console.log(r)
       setRooms(r)
     }
 
     const onNotChooserEvent = () => {
-      console.log("I am not the chooser")
       setIsChooser(0)
+      setPlayers([])
     }
 
     const onChooserEvent = () => {
-      console.log("I am the chooser")
       setIsChooser(1)
     }
 
     const onTimeEvent = ({time}) => {
-      if(time === 55){
+      if(time === MAX_TIME){
         setRoundOver(false)
       }
       setTimer(time)
@@ -103,51 +108,83 @@ function App() {
     }
 
     const onEndRound = ({incrementalScore}) => {
-      console.log(`Got incremental score ${incrementalScore}`)
       setIncScore(incrementalScore)
       setEndRound(true)
     } 
 
     const onScoreEvent = (s) => {
-      console.log(s)
       setScore(s)
     }
 
     const onRoundOver = () => {
-      console.log("Round is over!")
       setEndRound(true)
     }
 
-    socket.on("connect", onConnect);
-    socket.on("disconnect", onDisconnect);
-    socket.on("create", onCreateEvent);
-    socket.on("join", onJoinEvent);
-    socket.on("rooms", onRoomsEvent);
-    socket.on('notchooser', onNotChooserEvent);
-    socket.on('chooser', onChooserEvent);
-    socket.on('timer', onTimeEvent);
-    socket.on('word', onWordEvent);
-    socket.on('round', onRoundEvent);
-    socket.on('lives', onLivesEvent);
-    socket.on('endround', onEndRound)
-    socket.on('scoreboard', onScoreEvent);
-    socket.on('roundover', onRoundOver);
+    const onGameOver = () => {
+      setGameOver(true)
+    }
+
+    const onLeave = ({qty}) => {
+      setStarted(qty > 1)
+    }
+
+    const onJoinError = ({message}) => {
+      console.log(`Receieved error ${message}`)
+      setErrorMessage(message)
+      setTimeout(() => {
+        setErrorMessage('')
+      }, 2000)
+    }
+
+    const onDisconnectSocket = () => {
+      navigate('/')
+      setErrorMessage('Server has disconnected')
+      setRooms([])
+      setConnected(false)
+      setTimeout(() => {
+        setErrorMessage('')
+      }, 2000)
+    }
+
+    socket.on("clientConnect", onConnect);
+    socket.on("clientDisconnect", onDisconnect);
+    socket.on("clientCreate", onCreateEvent);
+    socket.on("clientJoin", onJoinEvent);
+    socket.on("clientRooms", onRoomsEvent);
+    socket.on('clientNotchooser', onNotChooserEvent);
+    socket.on('clientChooser', onChooserEvent);
+    socket.on('clientTimer', onTimeEvent);
+    socket.on('clientWord', onWordEvent);
+    socket.on('clientRound', onRoundEvent);
+    socket.on('clientLives', onLivesEvent);
+    socket.on('clientEndround', onEndRound)
+    socket.on('clientScoreboard', onScoreEvent);
+    socket.on('clientRoundover', onRoundOver);
+    socket.on('clientGameover', onGameOver);
+    socket.on('clientLeave', onLeave);
+    socket.on('joinError', onJoinError);
+    socket.on('disconnect', onDisconnectSocket);
 
     return () => {
-      socket.off("connect", onConnect);
-      socket.off("disconnect", onDisconnect);
-      socket.off("create", onCreateEvent);
-      socket.off("join", onJoinEvent);
-      socket.off("rooms", onRoomsEvent);
-      socket.off('notchooser', onNotChooserEvent);
-      socket.off('chooser', onChooserEvent);
-      socket.off('timer', onTimeEvent);
-      socket.off('word', onWordEvent);
-      socket.off('round', onRoundEvent);
-      socket.off('lives', onLivesEvent);
-      socket.off('endround', onEndRound);
-      socket.off('scoreboard', onScoreEvent);
-      socket.off('roundover', onRoundOver);
+      setDisconnected(true)
+      socket.off("clientConnect", onConnect);
+      socket.off("clientDisconnect", onDisconnect);
+      socket.off("clientCreate", onCreateEvent);
+      socket.off("clientJoin", onJoinEvent);
+      socket.off("clientRooms", onRoomsEvent);
+      socket.off('clientNotchooser', onNotChooserEvent);
+      socket.off('clientChooser', onChooserEvent);
+      socket.off('clientTimer', onTimeEvent);
+      socket.off('clientWord', onWordEvent);
+      socket.off('clientRound', onRoundEvent);
+      socket.off('clientLives', onLivesEvent);
+      socket.off('clientEndround', onEndRound)
+      socket.off('clientScoreboard', onScoreEvent);
+      socket.off('clientRoundover', onRoundOver);
+      socket.off('clientGameover', onGameOver);
+      socket.off('clientLeave', onLeave);
+      socket.off('joinError', onJoinError);
+      socket.off('disconnect', onDisconnectSocket);
     };
   }, []);
 
@@ -155,11 +192,12 @@ function App() {
     <div className="App">
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<Home rooms={rooms}/>}></Route>
+          <Route index element={<Home rooms={rooms} error={errorMessage} connected={connected}/>}></Route>
           <Route path="game" element={<MainGame time={timer} playerState={isChooser} 
             roomName={roomName} chosenWord={chosenWord} round={round} started={started}
             players={players} username={username} incScore={incScore} scoreboard={score}
-            roundOver={endRound} setRoundOver={setRoundOver}/>}></Route>
+            roundOver={endRound} setRoundOver={setRoundOver} gameOver={gameOver} setChosenWord={setChosenWord}
+            setGameOver={setGameOver}/>}></Route>
         </Route>
       </Routes>
     </div>

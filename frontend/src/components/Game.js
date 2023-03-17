@@ -5,12 +5,13 @@ import stage2 from '../assets/stage-2.png'
 import stage3 from '../assets/stage-3.png'
 import stage4 from '../assets/stage-4.png'
 import stage5 from '../assets/stage-5.png'
+import stage6 from '../assets/stage-6.png'
 import '../styles/Game.css'
 import { getRandomWord } from '../assets/words';
 import { socket } from '../socket';
 
-const Game = ({enabled, chosenWord, timeRemaining, roomName, username, players}) => {
-    const MAX_GUESSES = 5;
+const Game = ({enabled, chosenWord, timeRemaining, roomName, username, players, waiting}) => {
+    const MAX_GUESSES = 6;
     const [word, setWord] = useState(chosenWord)
     const [letter, setLetter] = useState('')
     const [guessedLetters, setGuessedLetters] = useState({})
@@ -28,7 +29,8 @@ const Game = ({enabled, chosenWord, timeRemaining, roomName, username, players})
         2: stage2,
         3: stage3,
         4: stage4,
-        5: stage5
+        5: stage5,
+        6: stage6
     }
 
     const resetState = () => {
@@ -53,7 +55,6 @@ const Game = ({enabled, chosenWord, timeRemaining, roomName, username, players})
     }, [word])
 
     useEffect(() => {
-        console.log(`Have need ${need}`)
         if(need === 0){
             setSuccessText("You Win!")
             setGuessingEnabled(false)
@@ -122,17 +123,26 @@ const Game = ({enabled, chosenWord, timeRemaining, roomName, username, players})
             const temp = {...guessedLetters}
             temp[guess] = 1;
             setGuessedLetters(temp)
-            socket.emit('life', {roomName: roomName, username: username})
         }
 
+        socket.emit('life', {roomName: roomName, username: username, decrement: !word.includes(guess)})
         setLetter("")
     }
 
+    if(waiting) {
+        return (
+            <div className='App-header'>
+                <div className='waiting-text'>
+                    Waiting for players
+                </div>
+            </div>
+        )
+    }
     if(!enabled) {
         return (
             <div className='App-header'>
                 <div className='waiting-text'>
-                    Round is over, player is choosing word
+                    Player is choosing word {/* Can we make this the name of the actual player */}
                 </div>
             </div>
         )
@@ -150,9 +160,9 @@ const Game = ({enabled, chosenWord, timeRemaining, roomName, username, players})
                         return ( 
                             !player.chooser &&
                             player.username !== username &&
-                            <div>
-                                <img src={stageMap[player.lives]} className="stickman-logo logo-sm"/>
-                                <div>{player.username}</div>
+                            <div className='logo-container'>
+                                <img src={stageMap[MAX_GUESSES - player.lives]} className="stickman-logo logo-sm"/>
+                                <div className='logo-username'>{player.username}</div>
                             </div>
                         )
                     })}

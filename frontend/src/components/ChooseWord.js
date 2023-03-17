@@ -3,7 +3,7 @@ import '../styles/Game.css'
 import { getRandomWord } from '../assets/words';
 import { socket } from '../socket';
 
-const ChooseWord = ({chooseWord, enabled, finishTimer}) => {
+const ChooseWord = ({chooseWord, enabled, waiting}) => {
     const [word, setWord] = useState('')
 
     useEffect(() => {
@@ -22,13 +22,21 @@ const ChooseWord = ({chooseWord, enabled, finishTimer}) => {
 
     const handleSubmit = () => {
         chooseWord(word)
-        //finishTimer()
     }
 
     const updateWord = (w) => {
         setWord(w.target.value.toLowerCase())
     }
 
+    if(waiting) {
+        return (
+            <div className='App-header'>
+                <div className='waiting-text'>
+                    Waiting for players
+                </div>
+            </div>
+        )
+    }
     if(!enabled) {
         return (
             <div className='App-header'>

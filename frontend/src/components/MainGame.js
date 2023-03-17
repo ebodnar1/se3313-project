@@ -6,6 +6,8 @@ import ChooseWord from "./ChooseWord";
 import Game from "./Game";
 import HeaderBar from "./HeaderBar";
 import { socket } from "../socket.js";
+import GameOver from "./GameOver";
+import Scoreboard from "./Scoreboard";
 
 const MAX_TIMER_VALUE = 55;
 const MAX_CHOOSE_TIME = 20;
@@ -17,6 +19,7 @@ const MainGame = ({
   time,
   roomName,
   chosenWord,
+  setChosenWord,
   round,
   started,
   players,
@@ -25,102 +28,73 @@ const MainGame = ({
   scoreboard,
   incScore,
   setRoundOver,
+  gameOver,
+  setGameOver
 }) => {
-  const location = useLocation();
-  const [word, setWord] = useState(getRandomWord());
   const [timer, setTimer] = useState(MAX_TIMER_VALUE);
-  const [chooseTime, setChooseTime] = useState(MAX_CHOOSE_TIME);
-  const [guessTime, setGuessTime] = useState(MAX_GUESS_TIME);
-  const [gameState, setGameState] = useState(0);
-
-  useEffect(() => {
-    setWord(chosenWord);
-  }, [chosenWord]);
+  const [gameState, setGameState] = useState(time >= MAX_TIMER_VALUE - MAX_CHOOSE_TIME - 1 ? 0 : 1);
 
   useEffect(() => {
     setTimer(time);
-  }, [time]);
-
-  useEffect(() => {
-    if (timer >= MAX_TIMER_VALUE - MAX_CHOOSE_TIME) {
-      setChooseTime(timer - (MAX_TIMER_VALUE - MAX_CHOOSE_TIME));
-      setGameState(0);
-    } else if (timer >= MAX_TIMER_VALUE - MAX_CHOOSE_TIME - MAX_GUESS_TIME) {
-      setGameState(1);
-      setGuessTime(
-        timer - (MAX_TIMER_VALUE - MAX_CHOOSE_TIME - MAX_GUESS_TIME)
-      );
-    } else if (timer === 0) {
+    if(time === MAX_TIMER_VALUE - MAX_CHOOSE_TIME - 1){
+      setGameState(1)
+    }
+    else if(time === MAX_TIMER_VALUE - MAX_CHOOSE_TIME - MAX_GUESS_TIME - 1){
+      setGameState(0)
+    }
+    else if(time === 0){
       socket.emit("start", { roomName: roomName });
     }
-  }, [timer]);
-
-  useEffect(() => {
-    clearTimes();
-  }, [gameState]);
-
-  const clearTimes = () => {
-    setChooseTime(MAX_CHOOSE_TIME);
-    setGuessTime(MAX_GUESS_TIME);
-    setWord(getRandomWord()); //DELETE WHEN IT IS IMPLEMENTED
-  };
-
-  useEffect(() => {
-    if (round >= MAX_ROUNDS) console.log("Max round reached");
-  }, [round]);
+  }, [time]);
 
   const updateWord = (w) => {
-    setWord(w);
+    setChosenWord(w);
     socket.emit("word", { word: w, roomName: roomName });
   };
 
+  if(gameOver) {
+    return (
+        <div className="home-header">
+            <div className="sub-home-header">
+                <GameOver text={"Game is over"} username={username} scoreboard={scoreboard} setGameOver={setGameOver}/>
+            </div>
+        </div>
+      )
+  }
   if (!started) {
     return (
-      <div className="home-header">
-        <div className="sub-home-header">
-          <h2 className="join-header">Waiting for other players</h2>
+        <div className="home-header">
+            <div className="sub-home-header">
+                <GameOver text={"Waiting for other players"} username={username}/>
+            </div>
         </div>
-      </div>
     );
   }
   return (
     <>
       <HeaderBar
         round={round}
-        timeRemaining={gameState === 0 ? chooseTime : guessTime}
         gameState={gameState}
         roundOver={roundOver}
         remTime={timer}
+        username={username}
       />
       <div className="App-header">
         {!roundOver && playerState === 0 && (
           <Game
-            chosenWord={word}
-            timeRemaining={guessTime}
+            chosenWord={chosenWord}
+            timeRemaining={timer}
             enabled={gameState === 1}
             roomName={roomName}
             username={username}
             players={players}
+            waiting={time > MAX_TIMER_VALUE}
           />
         )}
         {!roundOver && playerState === 1 && (
-          <ChooseWord chooseWord={updateWord} enabled={gameState === 0} />
+          <ChooseWord chooseWord={updateWord} enabled={gameState === 0} waiting={time > MAX_TIMER_VALUE}/>
         )}
-        {roundOver && scoreboard && (
-          <div>
-            <div>Round Score: {incScore}</div>
-            <div>
-              Scoreboard:{" "}
-              {scoreboard.map((sc) => {
-                return (
-                  <div>
-                    {sc.username} - {sc.score}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        {roundOver && scoreboard && <Scoreboard scoreboard={scoreboard} incScore={incScore} roundWord={chosenWord}/>}
       </div>
     </>
   );

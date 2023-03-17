@@ -15,3 +15,24 @@
     color: white;
     font-size: 21px;
 }
+
+.header-left {
+    width: fit-content;
+}
+
+.inline-div {
+    display: inline-block;
+}
+
+.inline-div:first-child {
+    margin-right: 40px;
+}
+
+.leave-button {
+    font-style: italic;
+}
+
+.leave-button:hover {
+    text-decoration: underline;
+    cursor: pointer;
+}

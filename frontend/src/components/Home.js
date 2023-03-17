@@ -3,8 +3,8 @@ import Modal from './Modal';
 import '../styles/Home.css'
 
 //Iterate through open rooms and display them
-const Home = ({rooms}) => {
-    const [selectedGame, setSelectedGame] = useState(-1)
+const Home = ({rooms, error, connected}) => {
+    const [selectedGame, setSelectedGame] = useState('')
     const [creatingRoom, setCreatingRoom] = useState(false)
 
     const handleGameClick = (game) => {
@@ -12,7 +12,7 @@ const Home = ({rooms}) => {
     }
 
     const clearGame = () => {
-        setSelectedGame(-1)
+        setSelectedGame('')
         setCreatingRoom(false)
     }
 
@@ -20,11 +20,20 @@ const Home = ({rooms}) => {
         setCreatingRoom(true)
     }
 
+    if(!connected || error){
+        return (
+            <div className='App-header App-header-ext'>
+                <div className='sub-home-header'>
+                    <h2 className='join-header'>{connected ? error : "Server is not connected"}</h2>
+                </div>
+            </div>
+        )
+    }
     return (
         <div className='home-header'>
-            {(selectedGame >= 0 || creatingRoom) && <div className='modal-overlay'>
+            {(selectedGame || creatingRoom) && <div className='modal-overlay'>
                 <div className='overlay-opacity' onClick={() => clearGame()}/>
-                <Modal enabled={selectedGame >= 0 || creatingRoom} setEnabled={clearGame} title={creatingRoom ? "" : rooms[selectedGame].name} creating={creatingRoom}/>
+                <Modal enabled={selectedGame || creatingRoom} setEnabled={clearGame} title={creatingRoom ? "" : selectedGame} creating={creatingRoom}/>
             </div>}
             <div className='sub-home-header'>
                 <h2 className='join-header'>Join a game</h2>
@@ -41,7 +50,7 @@ const Home = ({rooms}) => {
                                     <div>{room.count === 1 ? "1 Player" : `${room.count} Players`}</div>
                                 </div>
                                 <div className='join-button-container'>
-                                    <button className='join-game-button' onClick={() => handleGameClick(0)}>Join</button>
+                                    <button className='join-game-button' onClick={() => handleGameClick(room.name)}>Join</button>
                                 </div>
                             </div>
                         </div>
