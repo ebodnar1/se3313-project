@@ -4,4 +4,4 @@ Ethan Bodnar, Keon Jin, Kevin Jing, Shirley Wang
 ### Starting the Application
 Ensure all node modules are installed - install them in the respective directory, not the se3313-project directory  
 Run *npm run start* in the *frontend* directory  
-Run *node index.js* or *npx nodemon index.js* in the backend directory  
+Run *node index.js* or *npx nodemon index.js* in the *backend* directory  
