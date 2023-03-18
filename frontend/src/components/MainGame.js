@@ -33,6 +33,13 @@ const MainGame = ({
 }) => {
   const [timer, setTimer] = useState(MAX_TIMER_VALUE);
   const [gameState, setGameState] = useState(time >= MAX_TIMER_VALUE - MAX_CHOOSE_TIME - 1 ? 0 : 1);
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    setTimeout(() => {
+      setLoaded(true)
+    }, 800)
+  }, [])
 
   useEffect(() => {
     setTimer(time);
@@ -52,6 +59,11 @@ const MainGame = ({
     socket.emit("word", { word: w, roomName: roomName });
   };
 
+  if(!loaded) return <div className="home-header">
+    <div className='App-header'>
+      Joining Room...
+    </div>
+  </div>
   if(gameOver) {
     return (
         <div className="home-header">
@@ -92,7 +104,8 @@ const MainGame = ({
           />
         )}
         {!roundOver && playerState === 1 && (
-          <ChooseWord chooseWord={updateWord} enabled={gameState === 0} waiting={time > MAX_TIMER_VALUE}/>
+          <ChooseWord chooseWord={updateWord} enabled={gameState === 0} 
+            waiting={time > MAX_TIMER_VALUE} time={MAX_TIMER_VALUE - MAX_CHOOSE_TIME - timer}/>
         )}
         {roundOver && scoreboard && <Scoreboard scoreboard={scoreboard} incScore={incScore} roundWord={chosenWord}/>}
       </div>

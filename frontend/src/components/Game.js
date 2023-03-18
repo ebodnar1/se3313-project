@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import stickman from '../assets/stickman.png'
-import stage1 from '../assets/stage-1.png'
-import stage2 from '../assets/stage-2.png'
-import stage3 from '../assets/stage-3.png'
-import stage4 from '../assets/stage-4.png'
-import stage5 from '../assets/stage-5.png'
-import stage6 from '../assets/stage-6.png'
+import state1 from '../assets/state-1.png'
+import state2 from '../assets/state-2.png'
+import state3 from '../assets/state-3.png'
+import state4 from '../assets/state-4.png'
+import state5 from '../assets/state-5.png'
+import state6 from '../assets/state-6.png'
 import '../styles/Game.css'
 import { getRandomWord } from '../assets/words';
 import { socket } from '../socket';
@@ -25,12 +25,12 @@ const Game = ({enabled, chosenWord, timeRemaining, roomName, username, players, 
 
     const stageMap = {
         0: stickman,
-        1: stage1,
-        2: stage2,
-        3: stage3,
-        4: stage4,
-        5: stage5,
-        6: stage6
+        1: state1,
+        2: state2,
+        3: state3,
+        4: state4,
+        5: state5,
+        6: state6
     }
 
     const resetState = () => {

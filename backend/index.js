@@ -199,11 +199,6 @@ io.on('connection', socket => {
             emitScoreboard(roomName, connections)
             if(checkAllSubmitted(roomName)){
                 io.to(roomName).emit('clientRoundover')
-
-                roomMap[roomName].selector.score += 10;
-                io.to(roomMap[roomName].selector.id).emit('clientEndround', {
-                    incrementalScore: 10
-                })
                 emitScoreboard(roomName, connections)
                 roomMap[roomName].time = GUESS_END;
                 roomMap[roomName].roundStarted = false;
@@ -261,7 +256,7 @@ io.on('connection', socket => {
             if(!roomMap[room].connections) continue;
             for(const conn of roomMap[room].connections){
                 if(conn.username === username) {
-                    if(conn.chooser) callStart(room)
+                    if(conn.chooser && roomMap[room].time > CHOOSE_END) callStart(room)
                     roomMap[room].connections = roomMap[room].connections.filter(u => u.username !== username)
                     roomMap[room].roleQueue = roomMap[room].roleQueue.filter(u => u.username !== username)
                     return room;
@@ -273,11 +268,6 @@ io.on('connection', socket => {
     }
 
     const emitScoreboard = (roomName, connections) => {
-        console.log("Emitting scoreboard")
-        console.log(connections.map(c => {return {
-            username: c.username,
-            score: c.score
-        }}))
         io.to(roomName).emit('clientScoreboard', connections.map(c => {return {
             username: c.username,
             score: c.score
@@ -285,8 +275,9 @@ io.on('connection', socket => {
     }
 
     const emitRooms = () => {
-        const mappedObj = Object.keys(roomMap).map((key) => {return {name: key, count: roomMap[key].connections.length, round: roomMap[key].round}});
-        io.sockets.emit('clientRooms', mappedObj)
+        const list =  Object.keys(roomMap).map((key) => {return {name: key, count: roomMap[key].connections.length, round: roomMap[key].round}});
+        const filteredList = list.filter(item => item.round < MAX_ROUNDS)
+        io.sockets.emit('clientRooms', filteredList)
     }
 
     const checkOneSubmitted = (roomName) => {
@@ -306,13 +297,33 @@ io.on('connection', socket => {
         const timer = setInterval(() => {
             if(!roomMap[room]) return clearInterval(timer)
             roomMap[room].time--;
-            if(roomMap[room].time === GUESS_END - 1) io.to(room).emit('clientRoundover')
+            if(roomMap[room].time === GUESS_END - 1) {
+                if(checkOneSubmitted(room)){
+                    roomMap[room].selector.score += 10;
+                    io.to(roomMap[room].selector.id).emit('clientEndround', {
+                        incrementalScore: 10
+                    })
+                }
+                emitScoreboard(room, roomMap[room].connections)
+                io.to(room).emit('clientRoundover')
+                emitRoundOver(room)
+                roomMap[room].roundStarted = false;
+            }
             if(roomMap[room].time < 0){
                 roomMap[room].time = start_time;
             }
             io.to(room).emit('clientTimer', {time: roomMap[room].time})
         }, 1000)
+    }
 
+    const emitRoundOver = (roomName) => {
+        for(const conn of roomMap[roomName].connections){
+            if(!conn.submitted){
+                io.to(conn.id).emit('clientEndround', {
+                    incrementalScore: 0
+                })
+            }
+        }
     }
 })
 

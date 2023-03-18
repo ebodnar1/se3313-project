@@ -32,11 +32,13 @@ const Modal = ({enabled, setEnabled, title, creating}) => {
                 <div className={creating ? 'modal-content modal-content-large' : 'modal-content'}>
                     {creating && <div className='modal-text'>
                         <label className='join-game-label'>Enter the room name:</label>
-                        <input className='username-input' maxLength={15} onChange={updateRoomName}></input>
+                        <input className='username-input' maxLength={15} onChange={updateRoomName}
+                            autoComplete="off" autoCorrect="off"></input>
                     </div>}
                     <div className='modal-text'>
                         <label className='join-game-label'>Enter your username:</label>
-                        <input className='username-input' maxLength={15} onChange={updateUsername}></input>
+                        <input className='username-input' maxLength={15} onChange={updateUsername}
+                            autoComplete="off" autoCorrect="off"></input>
                     </div>
                     <div className='modal-buttons'>
                         <button onClick={setEnabled} className='modal-button'>Close</button>
