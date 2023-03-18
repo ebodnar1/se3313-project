@@ -165,13 +165,15 @@ io.on('connection', socket => {
         io.to(user.id).emit('clientEndround', {
             incrementalScore: scoreInc
         })
-        emitScoreboard(roomName, connections)
-        if(checkAllSubmitted(roomName)){
+        if(checkOneSubmitted(roomName)){
+            console.log(`One has submitted!`)
             roomMap[roomName].selector.score += connections.length === 2 ? 0 : scoreInc - 10;
             io.to(roomMap[roomName].selector.id).emit('clientEndround', {
                 incrementalScore: connections.length === 2 ? 0 : scoreInc - 10
             })
-
+        }
+        emitScoreboard(roomName, connections)
+        if(checkAllSubmitted(roomName)){
             emitScoreboard(roomName, connections)
             io.to(roomName).emit('clientRoundover')
             roomMap[roomName].time = GUESS_END;
@@ -271,6 +273,11 @@ io.on('connection', socket => {
     }
 
     const emitScoreboard = (roomName, connections) => {
+        console.log("Emitting scoreboard")
+        console.log(connections.map(c => {return {
+            username: c.username,
+            score: c.score
+        }}))
         io.to(roomName).emit('clientScoreboard', connections.map(c => {return {
             username: c.username,
             score: c.score
@@ -282,9 +289,14 @@ io.on('connection', socket => {
         io.sockets.emit('clientRooms', mappedObj)
     }
 
+    const checkOneSubmitted = (roomName) => {
+        const connections = roomMap[roomName].connections;
+        return connections.filter(conn => conn.submitted === true).length === 2;
+    }
+
     const checkAllSubmitted = (roomName) => {
         const connections = roomMap[roomName].connections;
-        return !connections.find(conn => conn.submitted === false);
+        return !connections.some(conn => conn.submitted === false);
     }
 
     //Looping timer
@@ -294,6 +306,7 @@ io.on('connection', socket => {
         const timer = setInterval(() => {
             if(!roomMap[room]) return clearInterval(timer)
             roomMap[room].time--;
+            if(roomMap[room].time === GUESS_END - 1) io.to(room).emit('clientRoundover')
             if(roomMap[room].time < 0){
                 roomMap[room].time = start_time;
             }
