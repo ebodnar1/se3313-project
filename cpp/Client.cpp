@@ -6,13 +6,15 @@
 #include <set>
 #include <vector>
 #include <string>
+#include <array>
+#include <cstring>
+#include <cctype>
 
 using namespace Sync;
 using namespace std;
 
-//IP and port numbers to join on 
+//IP to join on 
 const string IP = "127.0.0.1";
-const int PORT = 2000;
 
 //Array of hangman stages
 const array<array<string, 7>, 7> lives = {{
@@ -56,7 +58,7 @@ const array<array<string, 7>, 7> lives = {{
         "  +---+",
         "  |     |",
         "  O     |",
-        " /|\\   |",
+        " /|\\    |",
         "        |",
         "        |",
         "========="
@@ -65,7 +67,7 @@ const array<array<string, 7>, 7> lives = {{
         "  +---+",
         "  |     |",
         "  O     |",
-        " /|\\   |",
+        " /|\\    |",
         " /      |",
         "        |",
         "========="
@@ -74,8 +76,8 @@ const array<array<string, 7>, 7> lives = {{
         "  +---+",
         "  |     |",
         "  O     |",
-        " /|\\   |",
-        " / \\   |",
+        " /|\\    |",
+        " / \\    |",
         "        |",
         "========="
     }
@@ -95,6 +97,7 @@ class ClientThread : public Thread {
 		bool gameOn;			//Flag that determines whether or not the game is on
 		string score;			//String formatted scoreboard for the game
 		string statusMessage;	//Current status message
+		string clientName;
 
 		//Splits a string according to a substring delimiter
 		vector<string> split(string s, string delimiter) {
@@ -133,7 +136,14 @@ class ClientThread : public Thread {
 
 		//Check the letter for a guess, returning 0 if it was already guessed, 1 if it is correct, and -1 for incorrect
 		int resolveGuess(char g) {
+			g = tolower(g);
+			if(!isalpha(g)){
+				return -2;
+			}
 			//Check if already guessed
+			if(correct.find(g) != correct.end()){
+				return 0;
+			}
 			for(int i = 0; i < guessed.size(); i++){
 				if(guessed[i] == g){
 					return 0;
@@ -174,7 +184,7 @@ class ClientThread : public Thread {
 
 	public:
 		//Thread constructor to initialize values
-		ClientThread(Socket& socket, bool& terminate): socket(socket), terminate(terminate) {
+		ClientThread(Socket& socket, bool& terminate, string& clientName): socket(socket), terminate(terminate), clientName(clientName) {
 			incorrect = 0;
 			input = "";
 		}
@@ -189,9 +199,7 @@ class ClientThread : public Thread {
 				try {
 					int num = socket.Open();
 					//Send server the client's name
-					string s = "testing";
-					s += to_string(rand() % 100);
-					inputData = ByteArray(s);
+					inputData = ByteArray(clientName);
 					socket.Write(inputData);
 					break;
 				}
@@ -215,7 +223,10 @@ class ClientThread : public Thread {
 					cout << flush;
 					cout << "\033[2J\033[1;1H";
 					cout << score << endl;
-					cout << lives[incorrect] << endl;
+					for(string life : lives[incorrect]){
+						cout << "\t" << life << endl;
+					}
+					//cout << lives[incorrect] << endl;
 					
 					//Convert the word to blanks
 					string w = convertWordToBlanks(word);
@@ -301,12 +312,18 @@ class ClientThread : public Thread {
 					else if(r == -1){
 						//If the number of incorrect guesses is the maximum value
 						if(incorrect == 6){
+							cout << flush;
+							cout << "\033[2J\033[1;1H";
+							cout << score << endl;
+							for(string life : lives[lives.size() - 1]){
+								cout << "\t" << life << endl;
+							}
 							//Display message
 							cout << "\n======================Round Over=====================" << endl;
 							cout << "== You lose, waiting for other players to guess... ==" << endl;
 							cout << "=====================================================\n" << endl;
-							//inputData = ByteArray("incorrect");
-							//socket.Write(inputData);
+							inputData = ByteArray("incorrect");
+							socket.Write(inputData);
 							gameOn = false;
 						}
 					}
@@ -314,17 +331,38 @@ class ClientThread : public Thread {
 					else if(r == 0) {
 						statusMessage = "You have already guessed this letter!";
 					}
+					else if(r == -2) {
+						statusMessage = "You are only allowed to guess letters!";
+					}
 				}
 			}
 		}
 };
 
-int main(void)
+int main(int argc, char* argv[])
 {
+	//Change the seed for the random number generator
+	srand((unsigned int) time(NULL));
+	//Collect command line information
+	string name = "client";
+	name += to_string(rand() % 1000);
+	int port = 2000;
+
+	for(int i = 1; i < argc; i++) {
+		if(strcmp(argv[i], "-n") == 0){
+			name = argv[i + 1];
+		}
+		else if(strcmp(argv[i], "-p") == 0) {
+			port = stoi(argv[i + 1]);
+		}
+	}
+
+	cout << "Name is " << name << endl;
+
 	//Create the thread
-	Socket socket(IP, PORT);
+	Socket socket(IP, port);
 	bool terminate = false;
-	ClientThread thread(socket, terminate);
+	ClientThread thread(socket, terminate, name);
 
 	//Loop until the user inputs 'EXIT'
 	while(!terminate){

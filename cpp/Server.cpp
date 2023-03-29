@@ -9,14 +9,13 @@
 #include <string>
 #include <map>
 #include <fstream>
+#include <cstring>
 
 using namespace Sync;
 using namespace std;
 
-//Port number to host on
-const int PORT = 2000;
 //Define the max guess time, after which timeout will occur
-const int MAX_GUESS_TIME = 10;
+const int MAX_GUESS_TIME = 30;
 
 //Thread for socket connections
 //Each client has its own corresponding SocketThread
@@ -27,6 +26,7 @@ class SocketThread : public Thread {
 		ByteArray data;				//Data passed to or read from socket
 		bool& guessed;				//Flag for if word was guessed
 		ThreadSem& semaphore;		//Semaphore for signalling word guessing
+		ThreadSem& incorrect;			//Semaphore for signalling incorrect guesses
 		string& word;				//Word as sent from server
 		string name;				//Name of the connected client
 		string& scores;				//Holds the stringified game score
@@ -34,8 +34,8 @@ class SocketThread : public Thread {
 
 	public:
 		//Constructor
-		SocketThread(Socket& socket, bool& terminate, bool& guessed, ThreadSem& sem, string& word, string& scores):
-		       	socket(socket), terminate(terminate), guessed(guessed), semaphore(sem), word(word), scores(scores) {}
+		SocketThread(Socket& socket, bool& terminate, bool& guessed, ThreadSem& sem, string& word, string& scores, ThreadSem& incorrect):
+		       	socket(socket), terminate(terminate), guessed(guessed), semaphore(sem), word(word), scores(scores), incorrect(incorrect) {}
 
 		//Destructor
 		~SocketThread() {}
@@ -61,7 +61,6 @@ class SocketThread : public Thread {
 				//If the word has been guessed, signal round over (with the semaphore) and increment the score for this client
 				if(guessed) {
 					guessed = false;
-					cout << "Word has been guessed - signalling round over" << endl;
 					semaphore.Signal();
 					score ++;
 				}
@@ -79,6 +78,9 @@ class SocketThread : public Thread {
 							//If the word was guessed correctly, update the flag to end the round
 							if(code == "correct"){
 								guessed = true;
+							}
+							else if(code == "incorrect") {
+								incorrect.Signal();
 							}
 						}
 					}
@@ -119,6 +121,8 @@ class ServerThread : public Thread {
 		vector<SocketThread*> threads;		//List of connected threads
 		bool guessed = false;				//Flag for word being guessed
 		ThreadSem semaphore;				//Semaphore for controlling guessing
+		ThreadSem incorrect;				//Semaphore for signalling incorrect guesses
+		int incorrectCount;
 		string word = "sample";				//Chosen word
 		string scoreString = "=======================================\n======= SE 3310 Hangman Team 27 =======\n=======================================";
 		vector<string> words;				//List of words
@@ -130,12 +134,17 @@ class ServerThread : public Thread {
 		}
 
 	public:
-		//Constructor - fill the list of words
+		//Constructor - fill the list of words and set the seed for the random number generator
 		ServerThread(SocketServer& server): server(server){
+			semaphore.SetID(1);
+			incorrect.SetID(2);
+
+			srand((unsigned int) time(NULL));
 			ifstream file("words.txt");
 			string line;
 			while(getline(file, line)) words.push_back(line);
 			timer = 0;
+			incorrectCount = 0;
 		}
 
 		//Destructor
@@ -144,7 +153,7 @@ class ServerThread : public Thread {
 		//Main method
 		virtual long ThreadMain() {
 			//Create a waiter that listens for server connections and semaphore changes
-			FlexWait waiter(2, &server, &semaphore);
+			FlexWait waiter(3, &server, &semaphore, &incorrect);
 			while(!terminate) {
 				try {
 					//Check the waiter every second
@@ -161,17 +170,25 @@ class ServerThread : public Thread {
 					else if(res->GetFD() == 5){
 						//Accept the connection, create a new thread, and add it to the list of connections
 						Socket* connection = new Socket(server.Accept());
-						SocketThread* thread = new SocketThread(*connection, terminate, guessed, semaphore, word, scoreString);
+						SocketThread* thread = new SocketThread(*connection, terminate, guessed, semaphore, word, scoreString, incorrect);
 						threads.push_back(thread);
-						cout << "Created new connection in ServerThread" << endl;
 					}
 					//Otherwise if there is activity with the semaphore
 					else if(res->GetFD() != 0){
+						if(res->GetID() == 2){
+							incorrect.Wait();
+							incorrectCount++;
+							if(incorrectCount < threads.size()) continue;	
+						}
+						else {
+							//Clear the semaphore signal
+							semaphore.Wait();
+						}
+
+						cout << "Guessed is " << (guessed == true) << endl;
 						//Create a new word
 						string s = GetRandomWord();
 						word = s;
-						//Clear the semaphore signal
-						semaphore.Wait();
 
 						//Construct a string of scores of all players in the game currently
 						scoreString = "SCORES:\n";
@@ -200,14 +217,20 @@ class ServerThread : public Thread {
 		}
 };
 
-int main(void)
+int main(int argc, char* argv[])
 {
-	std::cout << "I am a server." << std::endl;
+	int port = 2000;
+	for(int i = 1; i < argc; i++){
+		if(strcmp(argv[i], "-p") == 0){
+			port = stoi(argv[i + 1]);
+		}
+	}
 
+	cout << "Started server on port " << port << endl;
 	cout << "Enter any line to close the server" << endl;
 
 	//Define a server and thread for the sevre
-	SocketServer server(PORT);
+	SocketServer server(port);
 	ServerThread serverThread(server);
 
 	//NOTE THIS DOES NOT WORK - WE NEED TO IMPLEMENT SERVER TERMINATION

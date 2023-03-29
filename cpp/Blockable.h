@@ -19,6 +19,7 @@ class Blockable
 {
 protected:
     int fd;
+    int id;
 public:
     Blockable(int f=0):fd(f){;}
     Blockable(Blockable const & b) : fd(dup(b.fd)){;}
@@ -26,6 +27,8 @@ public:
     operator int(void)const {return fd;}
     void SetFD(int f){fd =f;}
     int GetFD(void) const {return fd;}
+    void SetID(int i){id=i;}
+    int GetID(void) const {return id;}
 };
 extern Blockable cinWatcher;
 
@@ -61,6 +64,8 @@ public:
 
 class ThreadSem : public PipeUser
 {
+private:
+		int id;
 public:
     ThreadSem(int initialState=0);
     ThreadSem (ThreadSem const &);

@@ -45,7 +45,6 @@ Socket SocketServer::Accept(void)
     if (result == this)
     {
         int connectionFD = accept(GetFD(),NULL,0);
-	std::cout << "Connection FD is " << connectionFD << std::endl;
         if (connectionFD < 0)
         {
             throw std::string("Unexpected error in the server");
