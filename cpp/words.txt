@@ -1,0 +1,17 @@
+banana
+apple
+mango
+strawberry
+blueberry
+orange
+peach
+apricot
+kiwi
+shoe
+car
+clock
+computer
+backpack
+jacket
+shirt
+wallet
