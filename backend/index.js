@@ -27,7 +27,13 @@ const stack = []
 const roomInfo = []
 const roomMap = {}
 
+//Called when the server gets a new connection
 io.on('connection', socket => {
+    /**
+     * Called when a client wants to create a room 
+     *  Creates a new room to the client, sets up their object
+     *  Emits the current list of rooms and a response about creation
+     */
     socket.on('create', ({username, roomName}) => {
         console.log(`Creating room ${roomName} under user ${username}`)
         if(roomName in roomMap) return io.to(socket.id).emit('joinError', {message: "Room name already exists"})
@@ -61,9 +67,16 @@ io.on('connection', socket => {
         io.to(socket.id).emit('clientCreate', {room: roomName, roundNo: roomMap[roomName].round, user: username})
     })
 
+    /**
+     * Called when a client wants to join an ecisting room
+     *  Throws errors if room cannot be found, room is full, or if the given username already exists in the room
+     *  Sets up the client's object
+     *  Emits the list of rooms and a join response to all clients in the room
+     *  Emits a join success response to the client
+     */
     socket.on('join', ({username, roomName}) => {
         console.log(`Joining room ${roomName} for user ${username}`)
-        if(!(roomName in roomMap)) return io.to(socket.id).emit('joinError', {message: "Room name already exists"})
+        if(!(roomName in roomMap)) return io.to(socket.id).emit('joinError', {message: "Room does not exist"})
         if(roomMap[roomName].connections.length === MAX_PLAYERS) return io.to(socket.id).emit('joinError', {message: "Room is full"})
         if(roomMap[roomName].connections.find(c => c.username === username)) return io.to(socket.id).emit('joinError', {message: "Username is taken"})
 
@@ -93,6 +106,15 @@ io.on('connection', socket => {
         emitRooms();
     })
 
+    /**
+     * Called every time a client wants to start a game
+     *  If the game has already begun and this is called it is ignored
+     *  Begin the rimer countdown and update the timer started flag
+     *  Wait for the buffer time, then:
+     *      Create a new role queue for the room, increment the round if necessary, emit a new round response to the room
+     *      Update information about the current selector, and emit to everyone the notchooser response
+     *      Emit the chooser response to the current selector
+     */
     socket.on('startgame', async ({roomName}) => {
         console.log(`Called into start game for ${roomName}`)
         if(roomMap[roomName].begun) return;
@@ -127,6 +149,13 @@ io.on('connection', socket => {
         callStart(roomName);
     })
 
+    /**
+     * Method to setup an iteration of the round
+     *  If the rolequeue is empty, then start a new round and create a new role queue, issuing a gameover or new round response to the room
+     *  For each connection in the room, reset some of their state variables
+    *   Update information about the current selector, and emit to everyone the notchooser response
+    *   Emit the chooser response to the current selector
+     */
     const callStart = (roomName) => {
         console.log(`Starting a game in ${roomName}`)
         if(roomMap[roomName].roleQueue.length === 0){
@@ -150,12 +179,23 @@ io.on('connection', socket => {
         io.to(selectorSocket.id).emit("clientChooser");
     }
 
+    /**
+     * When a chooser wants to set the global word
+     *  Emit to all rooms this new word and skip the choosing timer
+     */
     socket.on('word', ({word, roomName}) => {
         roomMap[roomName].word = word;
         roomMap[roomName].time = CHOOSE_END;
         io.to(roomName).emit('clientWord', {word})
     })
 
+    /**
+     * When a client correctly guesses the word
+     *  Assign them points and emit to them that their round is over
+     *  If they are the first to correctly guess, then emit the endround to the chooser and assign them points
+     *  Emit the scoreboard
+     *  If they are the last to guess, then emit to the room that the round is over and end the round
+     */
     socket.on('correct', ({roomName, username}) => {
         const connections = roomMap[roomName].connections;
         const user = connections.find(conn => conn.username === username)
@@ -181,6 +221,12 @@ io.on('connection', socket => {
         }
     })
 
+    /**
+     * When a client loses a life
+     *  Emit to the room the state of all of the clients
+     *  If they now have 0 lives, then end their round and submit for them
+     *  If every client has submitted, then emit to the room that the round is over and end the round
+     */
     socket.on('life', ({roomName, username, decrement}) => {
         const connections = roomMap[roomName].connections;
         const user = connections.find(conn => conn.username === username)
@@ -206,6 +252,10 @@ io.on('connection', socket => {
         }
     })
 
+    /**
+     * When a client leaves the connection (done by user)
+     *  Handle their leaving, emit to the room that they have left, and remove the connection
+     */
     socket.on('leave', ({username}) => {
         console.log(`${username} requested to leave`)
         const roomName = handleLeave(username)
@@ -214,6 +264,10 @@ io.on('connection', socket => {
         socket.leave(roomName)
     })
 
+    /**
+     * When a socket disconnects (unexpected termination)
+     *  Handle their leaving, emit to the room that they have left, and remove the connection
+     */
     socket.on('disconnect', () => {
         if(!socket.username) return;
         console.log(`Disconnecting ${socket.username}`)
@@ -224,6 +278,12 @@ io.on('connection', socket => {
         socket.disconnect(true)
     })
 
+    /**
+     * Handle a client leaving
+     *  If the room is left empty then delete it
+     *  If a room is left with less than 2 players then stop the game
+     *  Emit an update of rooms
+     */
     const handleLeave = (username) => {
         if(!username) return;
         const roomName = findAndRemoveUser(username)
@@ -238,6 +298,10 @@ io.on('connection', socket => {
         return roomName;
     }
 
+    /**
+     * Create a queue for which client gets the chooser role
+     *  Randomize the list of clients and return this as a list
+     */
     const createRoleQueue = (r) => {
         const queue = [...roomMap[r].connections];
 
@@ -251,6 +315,12 @@ io.on('connection', socket => {
         return queue;
     }
 
+    /**
+     * Find a user in the main object and remove them
+     *  If they are a chooser and have not yet chosen the word, then start a new round iteration with a new chooser
+     *  Remove them from the connections and rolequeue lists
+     *  Return the room they are in if any
+     */
     const findAndRemoveUser = (username) => {
         for(const room of Object.keys(roomMap)){
             if(!roomMap[room].connections) continue;
@@ -267,6 +337,9 @@ io.on('connection', socket => {
         return null;
     }
 
+    /**
+     * Emit the scoreboard (total game scores for each client) to the room
+     */
     const emitScoreboard = (roomName, connections) => {
         io.to(roomName).emit('clientScoreboard', connections.map(c => {return {
             username: c.username,
@@ -274,23 +347,40 @@ io.on('connection', socket => {
         }}))
     }
 
+    /**
+     * Emit the list of rooms to each connected socket
+     */
     const emitRooms = () => {
         const list =  Object.keys(roomMap).map((key) => {return {name: key, count: roomMap[key].connections.length, round: roomMap[key].round}});
         const filteredList = list.filter(item => item.round < MAX_ROUNDS)
         io.sockets.emit('clientRooms', filteredList)
     }
 
+    /**
+     * Check if exactly one guesser has guessed
+     */
     const checkOneSubmitted = (roomName) => {
         const connections = roomMap[roomName].connections;
         return connections.filter(conn => conn.submitted === true).length === 2;
     }
 
+    /**
+     * Check if all guessers have guessed
+     */
     const checkAllSubmitted = (roomName) => {
         const connections = roomMap[roomName].connections;
         return !connections.some(conn => conn.submitted === false);
     }
 
-    //Looping timer
+    /**
+     * Non-stop looping timer that updates a room's time variable
+     *  Set the inital time and ignore any calls beyond the first
+     *  Every second:
+     *      Decrement the time vairblae
+     *      If the game time has ended, update the scoreboard and emit it and the round over response, and end the round
+     *      If the time variable has gone beyond 0 then loop it back around
+     *      Emit this timer value to all clients in the room
+     */
     const beginCountdown = (start_time, room, offset) => {
         roomMap[room].time = start_time + offset;
         if(roomMap[room].timerStarted) return;
@@ -316,6 +406,9 @@ io.on('connection', socket => {
         }, 1000)
     }
 
+    /**
+     * For each ubsubmitted connection, emit to them an end round message with a score of 0
+     */
     const emitRoundOver = (roomName) => {
         for(const conn of roomMap[roomName].connections){
             if(!conn.submitted){
@@ -327,6 +420,9 @@ io.on('connection', socket => {
     }
 })
 
+/**
+ * Wait for the user to enter something to close the server
+ */
 const awaitResponse = (query) => {
     const read = readline.createInterface({
         input: process.stdin,
@@ -341,6 +437,10 @@ const awaitResponse = (query) => {
     );
 }
 
+/**
+ * Open the server on the specified port
+ * If the user enters a line, disconnect all the sockets, delete the room (cleanup), and terminate the server process
+ */
 server.listen(port, async () => {
     console.log(`Server listening on port ${port}...`)
     const q = await awaitResponse("Press enter to close the server...\n")

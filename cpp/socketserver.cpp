@@ -22,7 +22,7 @@ SocketServer::SocketServer(int port)
         throw std::string("Unable to bind socket to requested port");
 
     // Set up a maximum number of pending connections to accept
-    listen(socketFD,5);
+    listen(socketFD,10);
     SetFD(socketFD);
     // At this point, the object is initialized.  So return.
 }
