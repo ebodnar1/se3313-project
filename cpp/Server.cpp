@@ -202,6 +202,7 @@ class ServerThread : public Thread {
 						}
 						//Reset the timer
 						timer = 0;
+						incorrectCount = 0;
 					}
 				}
 				//Catch any errors
