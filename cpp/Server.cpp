@@ -26,7 +26,7 @@ class SocketThread : public Thread {
 		ByteArray data;				//Data passed to or read from socket
 		bool& guessed;				//Flag for if word was guessed
 		ThreadSem& semaphore;		//Semaphore for signalling word guessing
-		ThreadSem& incorrect;			//Semaphore for signalling incorrect guesses
+		ThreadSem& incorrect;		//Semaphore for signalling incorrect guesses
 		string& word;				//Word as sent from server
 		string name;				//Name of the connected client
 		string& scores;				//Holds the stringified game score
@@ -39,6 +39,10 @@ class SocketThread : public Thread {
 
 		//Destructor
 		~SocketThread() {}
+
+		Socket& GetSocket(){
+			return socket;
+		}
 
 		//Main method
 		virtual long ThreadMain() {
@@ -148,7 +152,22 @@ class ServerThread : public Thread {
 		}
 
 		//Destructor
-		~ServerThread() {}
+		~ServerThread() {
+			// Close the client sockets
+			for (auto thread : threads){
+				try{
+					// Close the socket
+					Socket& toClose = thread->GetSocket();
+					toClose.Close();
+				}
+				catch (...){
+					// TODO: exception message
+				}
+			}
+
+			// terminate thread loops
+			terminate = true;
+		}
 
 		//Main method
 		virtual long ThreadMain() {
