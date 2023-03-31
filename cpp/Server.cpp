@@ -148,7 +148,25 @@ class ServerThread : public Thread {
 		}
 
 		//Destructor
-		~ServerThread() {}
+		~ServerThread() {
+			// Close the client sockets
+			for (auto thread : threads)
+			{
+				try
+				{
+					// Close the socket
+					SocketThread& toClose = thread->GetSocket();
+					toClose.Close();
+				}
+				catch (...)
+				{
+					// If already ended, this will cause an exception
+				}
+			}
+
+			// Terminate the thread loops
+			terminate = true;
+		}
 
 		//Main method
 		virtual long ThreadMain() {
