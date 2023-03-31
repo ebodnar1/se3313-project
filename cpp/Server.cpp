@@ -157,7 +157,7 @@ class ServerThread : public Thread {
 			for (auto thread : threads){
 				try{
 					// Close the socket
-					Socket& toClose = thread->GetSocket();
+					SocketThread& toClose = thread->GetSocket();
 					toClose.Close();
 				}
 				catch (...){
