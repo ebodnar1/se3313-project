@@ -187,10 +187,17 @@ class ClientThread : public Thread {
 		ClientThread(Socket& socket, bool& terminate, string& clientName): socket(socket), terminate(terminate), clientName(clientName) {
 			incorrect = 0;
 			input = "";
+			cout << socket << endl;
+		}
+
+		Socket& GetSocket(){
+			return socket;
 		}
 
 		//Destructor
-		~ClientThread() {}
+		~ClientThread() {
+			terminate = true;
+		}
 
 		//Main method with infinite loop
 		virtual long ThreadMain() {
@@ -215,8 +222,10 @@ class ClientThread : public Thread {
 			FlexWait waiter(2, &socket, &cinWaiter);
 			Blockable * res;
 
+			cout << "hi" << endl;
+
 			//While the user does not want to terminate, continuously loop
-			while(!terminate) {
+			while(!terminate) {				
 				//If the game has started
 				if(gameOn){
 					//Clear the console, print the score and the current hangman
@@ -257,6 +266,11 @@ class ClientThread : public Thread {
 					//Get the socket data
 					socket.Read(inputData);
 					string result = inputData.ToString();
+					if (result == ""){
+						cout << "Server closed. Game terminated." <<endl;
+						terminate = true;
+						return 0;
+					}
 					vector<string> stateInfo = split(result, "//////");
 					//Convert this into the scoreboard and the word
 					score = stateInfo[0];
@@ -281,6 +295,8 @@ class ClientThread : public Thread {
 				//Read the line, exit if needed and print an error for invalid input
 				if(input == "EXIT"){
 					//Close client - MAKE THIS GRACEFUL
+					ByteArray terminateStatus = ByteArray("terminated");
+					socket.Write(terminateStatus);
 					terminate = true;
 				}
 				//If the user entered more than one letter, show an error

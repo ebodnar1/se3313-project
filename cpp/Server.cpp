@@ -10,6 +10,8 @@
 #include <map>
 #include <fstream>
 #include <cstring>
+#include <chrono>
+#include <thread>
 
 using namespace Sync;
 using namespace std;
@@ -31,8 +33,10 @@ class SocketThread : public Thread {
 		string name;				//Name of the connected client
 		string& scores;				//Holds the stringified game score
 		int score = 0;				//Holds the client's score
+		bool active = true; 		//Is socket active
 
 	public:
+
 		//Constructor
 		SocketThread(Socket& socket, bool& terminate, bool& guessed, ThreadSem& sem, string& word, string& scores, ThreadSem& incorrect):
 		       	socket(socket), terminate(terminate), guessed(guessed), semaphore(sem), word(word), scores(scores), incorrect(incorrect) {}
@@ -42,6 +46,14 @@ class SocketThread : public Thread {
 
 		Socket& GetSocket(){
 			return socket;
+		}
+
+		bool& SetTerminate(bool t){
+			terminate = t;
+		}
+
+		bool GetActiveStatus() {
+			return active;
 		}
 
 		//Main method
@@ -86,6 +98,9 @@ class SocketThread : public Thread {
 							else if(code == "incorrect") {
 								incorrect.Signal();
 							}
+							else if(code == "terminated") {
+								active = false;
+							}
 						}
 					}
 					//Catch any errors
@@ -94,6 +109,8 @@ class SocketThread : public Thread {
 					}
 				}
 			}
+			string exitm = "TERMINATE";
+			socket.Write(ByteArray(exitm));
 		}
 
 		//Signal to the client that the round is over
@@ -161,11 +178,11 @@ class ServerThread : public Thread {
 					toClose.Close();
 				}
 				catch (...){
-					// TODO: exception message
+					cout << "Destructor error" << endl;
 				}
 			}
-
 			// terminate thread loops
+			cout << "Closing the server ..." << endl;
 			terminate = true;
 		}
 
@@ -184,49 +201,65 @@ class ServerThread : public Thread {
 						if(timer == MAX_GUESS_TIME){
 							semaphore.Signal();
 						}
-					}
-					//Otherwise if there is activity on the server
-					else if(res->GetFD() == 5){
-						//Accept the connection, create a new thread, and add it to the list of connections
-						Socket* connection = new Socket(server.Accept());
-						SocketThread* thread = new SocketThread(*connection, terminate, guessed, semaphore, word, scoreString, incorrect);
-						threads.push_back(thread);
-					}
-					//Otherwise if there is activity with the semaphore
-					else if(res->GetFD() != 0){
-						if(res->GetID() == 2){
-							incorrect.Wait();
-							incorrectCount++;
-							if(incorrectCount < threads.size()) continue;	
-						}
-						else {
-							//Clear the semaphore signal
-							semaphore.Wait();
-						}
+					} else{
+						if (!terminate){
+							//Otherwise if there is activity on the server
+							if(res->GetFD() == 5){
+								//Accept the connection, create a new thread, and add it to the list of connections
+								Socket* connection = new Socket(server.Accept());
+								SocketThread* thread = new SocketThread(*connection, terminate, guessed, semaphore, word, scoreString, incorrect);
+								threads.push_back(thread);
+							}
+							//Otherwise if there is activity with the semaphore
+							else if(res->GetFD() != 0){
+								if(res->GetID() == 2){
+									incorrect.Wait();
+									incorrectCount++;
+									if(incorrectCount < threads.size()) continue;	
+								}
+								else {
+									//Clear the semaphore signal
+									semaphore.Wait();
+								}
 
-						cout << "Guessed is " << (guessed == true) << endl;
-						//Create a new word
-						string s = GetRandomWord();
-						word = s;
+								//cout << "Guessed is " << (guessed == true) << endl;
+								//Create a new word
+								string s = GetRandomWord();
+								word = s;
 
-						//Construct a string of scores of all players in the game currently
-						scoreString = "SCORES:\n";
-						for(int i = 0; i < threads.size(); i++){
-							scoreString += "Player " + threads[i]->GetName() + " has a score of " + to_string(threads[i]->GetScore()) + "\n";
-						}
+								//Construct a string of scores of all players in the game currently
+								scoreString = "SCORES:\n";
+								for(int i = 0; i < threads.size(); i++){
+									if (threads[i]->GetActiveStatus()){
+										scoreString += "Player " + threads[i]->GetName() + " has a score of " + to_string(threads[i]->GetScore()) + "\n";
+									}									
+								}
 
-						//Signal to all clients that the round is over
-						for(int i = 0; i < threads.size(); i++){
-							threads[i]->SignalRoundOver();
+								//Signal to all clients that the round is over
+								for(int i = 0; i < threads.size(); i++){
+									if (threads[i]->GetActiveStatus()){
+										threads[i]->SignalRoundOver();
+									}
+								}
+								//Reset the timer
+								timer = 0;
+								incorrectCount = 0;
+
+								if (terminate) {
+									break;
+								}
+							}
 						}
-						//Reset the timer
-						timer = 0;
-						incorrectCount = 0;
 					}
+				}
+				catch(TerminationException terminationException){
+					return terminationException;
 				}
 				//Catch any errors
 				catch(...) {
 					cout << "Error creating connection to server" << endl;
+					return 1;
+					close();
 				}
 			}
 		}
@@ -248,17 +281,18 @@ int main(int argc, char* argv[])
 
 	cout << "Started server on port " << port << endl;
 	cout << "Enter any line to close the server" << endl;
+	cout.flush();
 
 	//Define a server and thread for the sevre
 	SocketServer server(port);
 	ServerThread serverThread(server);
 
 	//NOTE THIS DOES NOT WORK - WE NEED TO IMPLEMENT SERVER TERMINATION
-	while(1){
-		sleep(1);
-	}
+	FlexWait cinWaiter(1, stdin);
+	cinWaiter.Wait();
+	cin.get();
 
 	//Close the server and thread
 	server.Shutdown();
-	serverThread.close();
+	return 0;
 }
