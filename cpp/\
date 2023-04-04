@@ -215,23 +215,13 @@ class ServerThread : public Thread {
 						// Terminate the thread loops
 						cout << "Terminating the server..." << endl;
 						terminate = true;
-						break;
 					}
 					//Otherwise if there is activity on the server
 					else if(res->GetFD() == 5){
-						try{
-							//Accept the connection, create a new thread, and add it to the list of connections
-							Socket* connection = new Socket(server.Accept());
-							SocketThread* thread = new SocketThread(*connection, terminate, guessed, semaphore, word, scoreString, incorrect, disconnect);
-							threads.push_back(thread);
-						}
-						catch(TerminationException terminationException){
-							return terminationException;
-						}
-						catch(string error){
-							cout << "Error: " << error << endl;
-							return 1;
-						}
+						//Accept the connection, create a new thread, and add it to the list of connections
+						Socket* connection = new Socket(server.Accept());
+						SocketThread* thread = new SocketThread(*connection, terminate, guessed, semaphore, word, scoreString, incorrect, disconnect);
+						threads.push_back(thread);
 					}
 					//Otherwise if there is activity with the semaphore
 					else if(res->GetFD() != 0){
@@ -281,6 +271,7 @@ class ServerThread : public Thread {
 					cout << "Error creating connection to server" << endl;
 				}
 			}
+			cout << "Terminated" << endl;
 		}
 
 		//Terminate the server
@@ -301,24 +292,9 @@ int main(int argc, char* argv[])
 	cout << "Started server on port " << port << endl;
 	cout << "Enter any line to close the server" << endl;
 
-	//Define a server and thread for the server
-	try{
-		SocketServer server(port);
-		ServerThread serverThread(server);
-//	FlexWait cinWaiter(1, stdin);
-//	cinWaiter.Wait();
-	cin.get();
-	//Close the server and thread
-	//server.Shutdown();
-	return 0;
-	}
-	catch(string err){
-		cout << "Got error " << err << endl;
-	}
-	/*
-	cout << "Created server" << endl;
-	//ServerThread serverThread(server);
-	cout << "Created thread" << endl;
+	//Define a server and thread for the sevre
+	SocketServer server(port);
+	ServerThread serverThread(server);
 
 	FlexWait cinWaiter(1, stdin);
 	cinWaiter.Wait();
@@ -326,7 +302,5 @@ int main(int argc, char* argv[])
 
 	//Close the server and thread
 	server.Shutdown();
-	return 0;
-	//serverThread.close();
-	*/
+	serverThread.close();
 }

@@ -257,6 +257,12 @@ class ClientThread : public Thread {
 					//Get the socket data
 					socket.Read(inputData);
 					string result = inputData.ToString();
+					if(result == ""){
+						terminate = true;
+						cout << "\033[2J\033[1;1H";
+						cout << "Server disconnected, leaving game..." << endl;
+						break;
+					}
 					vector<string> stateInfo = split(result, "//////");
 					//Convert this into the scoreboard and the word
 					score = stateInfo[0];
@@ -282,6 +288,8 @@ class ClientThread : public Thread {
 				if(input == "EXIT"){
 					//Close client - MAKE THIS GRACEFUL
 					terminate = true;
+					inputData = ByteArray("EXIT");
+					socket.Write(inputData);
 				}
 				//If the user entered more than one letter, show an error
 				else if(input.length() > 1){
@@ -362,11 +370,14 @@ int main(int argc, char* argv[])
 	//Create the thread
 	Socket socket(IP, port);
 	bool terminate = false;
-	ClientThread thread(socket, terminate, name);
 
-	//Loop until the user inputs 'EXIT'
-	while(!terminate){
-		sleep(1);
+	{
+		ClientThread thread(socket, terminate, name);
+
+		//Loop until the user inputs 'EXIT'
+		while(!terminate){
+			sleep(1);
+		}
 	}
 
 	//Close the socket

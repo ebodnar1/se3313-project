@@ -12,14 +12,20 @@ SocketServer::SocketServer(int port)
     if (socketFD < 0)
         throw std::string("Unable to open the socket server");
 
+	int reuseaddr = 1;
+	if(setsockopt(socketFD, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(reuseaddr)) < 0)
+		throw std::string("Unable to set socket options");
+
     // The second call is to bind().  This identifies the socket file
     // descriptor with the description of the kind of socket we want to have.
     bzero((char*)&socketDescriptor,sizeof(sockaddr_in));
     socketDescriptor.sin_family = AF_INET;
     socketDescriptor.sin_port = htons(port);
     socketDescriptor.sin_addr.s_addr = INADDR_ANY;
-    if (bind(socketFD,(sockaddr*)&socketDescriptor,sizeof(socketDescriptor)) < 0)
-        throw std::string("Unable to bind socket to requested port");
+    if (bind(socketFD,(sockaddr*)&socketDescriptor,sizeof(socketDescriptor)) < 0){
+	    close(socketFD);
+            throw std::string("Unable to bind socket to requested port");
+    }
 
     // Set up a maximum number of pending connections to accept
     listen(socketFD,10);
@@ -57,7 +63,9 @@ Socket SocketServer::Accept(void)
 
 void SocketServer::Shutdown(void)
 {
-    close(GetFD());
+	std::cout << "Called into shutdown " << GetFD() << std::endl;
+    int ret = close(GetFD());
+    std::cout << "Received response " << ret << std::endl;
     shutdown(GetFD(),SHUT_RDWR);
     terminator.Trigger();
 }
