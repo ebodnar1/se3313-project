@@ -200,7 +200,7 @@ class ServerThread : public Thread {
 			while(!terminate) {
 				try {
 					//Check the waiter every second
-					Blockable* res = waiter.Wait(5000);
+					Blockable* res = waiter.Wait(1000);
 					
 					//If there is no new data, increment the timer
 					if(res == 0){
