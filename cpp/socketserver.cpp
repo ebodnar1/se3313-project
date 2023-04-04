@@ -12,6 +12,7 @@ SocketServer::SocketServer(int port)
     if (socketFD < 0)
         throw std::string("Unable to open the socket server");
 
+    // Prevent sockets from being kept up for a time period - allows us to restart the server immediately
 	int reuseaddr = 1;
 	if(setsockopt(socketFD, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(reuseaddr)) < 0)
 		throw std::string("Unable to set socket options");
@@ -63,9 +64,7 @@ Socket SocketServer::Accept(void)
 
 void SocketServer::Shutdown(void)
 {
-	std::cout << "Called into shutdown " << GetFD() << std::endl;
-    int ret = close(GetFD());
-    std::cout << "Received response " << ret << std::endl;
+    close(GetFD());
     shutdown(GetFD(),SHUT_RDWR);
     terminator.Trigger();
 }

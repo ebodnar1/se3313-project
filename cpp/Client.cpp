@@ -97,7 +97,7 @@ class ClientThread : public Thread {
 		bool gameOn;			//Flag that determines whether or not the game is on
 		string score;			//String formatted scoreboard for the game
 		string statusMessage;	//Current status message
-		string clientName;
+		string clientName;		//Stores the username of this client
 
 		//Splits a string according to a substring delimiter
 		vector<string> split(string s, string delimiter) {
@@ -226,7 +226,6 @@ class ClientThread : public Thread {
 					for(string life : lives[incorrect]){
 						cout << "\t" << life << endl;
 					}
-					//cout << lives[incorrect] << endl;
 					
 					//Convert the word to blanks
 					string w = convertWordToBlanks(word);
@@ -257,6 +256,8 @@ class ClientThread : public Thread {
 					//Get the socket data
 					socket.Read(inputData);
 					string result = inputData.ToString();
+
+					//If empty data is sent, it means the server disconnected
 					if(result == ""){
 						terminate = true;
 						cout << "\033[2J\033[1;1H";
@@ -347,6 +348,7 @@ class ClientThread : public Thread {
 		}
 };
 
+//Client should be run as ./Client [-n userName] [-p portNumber]
 int main(int argc, char* argv[])
 {
 	//Change the seed for the random number generator
@@ -356,6 +358,7 @@ int main(int argc, char* argv[])
 	name += to_string(rand() % 1000);
 	int port = 2000;
 
+	//Parse the command line arguments
 	for(int i = 1; i < argc; i++) {
 		if(strcmp(argv[i], "-n") == 0){
 			name = argv[i + 1];
@@ -365,12 +368,11 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	cout << "Name is " << name << endl;
-
 	//Create the thread
 	Socket socket(IP, port);
 	bool terminate = false;
 
+	//Scope for destruction of thread
 	{
 		ClientThread thread(socket, terminate, name);
 

@@ -26,13 +26,13 @@ class SocketThread : public Thread {
 		ByteArray data;				//Data passed to or read from socket
 		bool& guessed;				//Flag for if word was guessed
 		ThreadSem& semaphore;		//Semaphore for signalling word guessing
-		ThreadSem& incorrect;			//Semaphore for signalling incorrect guesses
+		ThreadSem& incorrect;		//Semaphore for signalling incorrect guesses
 		string& word;				//Word as sent from server
 		string name;				//Name of the connected client
 		string& scores;				//Holds the stringified game score
 		int score = 0;				//Holds the client's score
-		ThreadSem& disconnect;
-		bool exit;
+		ThreadSem& disconnect;		//Signaled by a client when they disconnect
+		bool exit;					//Whether or not the client has disconnected
 
 	public:
 		//Constructor
@@ -77,7 +77,8 @@ class SocketThread : public Thread {
 							//Read the data and parse the message
 							socket.Read(data);
 							code = data.ToString();
-							if(code == ""){
+							//If the data receieved is empty (or is EXIT), then the client has disconnected
+							if(code == "" || code == "EXIT"){
 								disconnect.Signal();
 								exit = true;
 							}
@@ -85,12 +86,9 @@ class SocketThread : public Thread {
 							else if(code == "correct"){
 								guessed = true;
 							}
+							//If the word was guessed incorrectly then signal incorrect
 							else if(code == "incorrect") {
 								incorrect.Signal();
-							}
-							else if(code == "EXIT"){
-								disconnect.Signal();
-								exit = true;
 							}
 						}
 					}
@@ -130,6 +128,7 @@ class SocketThread : public Thread {
 			terminate = true;
 		}
 
+		//Checks whether a client has disconnected
 		bool getExit() {
 			return exit;
 		}
@@ -148,8 +147,8 @@ class ServerThread : public Thread {
 		string word = "sample";				//Chosen word
 		string scoreString = "=======================================\n======= SE 3310 Hangman Team 27 =======\n=======================================";
 		vector<string> words;				//List of words
-		int timer;					//Timer value (controls timeout)
-		ThreadSem disconnect;
+		int timer;							//Timer value (controls timeout)
+		ThreadSem disconnect;				//Tracks whether a client has disconnected
 
 		//Get a random word from words.txt
 		string GetRandomWord() {
@@ -163,6 +162,7 @@ class ServerThread : public Thread {
 			incorrect.SetID(2);
 			disconnect.SetID(3);
 
+			//Seed the random number generator (so it is different each time) and fill the list of words
 			srand((unsigned int) time(NULL));
 			ifstream file("words.txt");
 			string line;
@@ -181,7 +181,6 @@ class ServerThread : public Thread {
 					// Close the socket
 					Socket& toClose = thread->GetSocket();
 					toClose.Close();
-					//thread->Close();
 				}
 				catch (...)
 				{
@@ -211,8 +210,8 @@ class ServerThread : public Thread {
 							semaphore.Signal();
 						}
 					}
+					//If there is input from the console (meaning the user wants to close the server)
 					else if(res->GetFD() == 0){
-						// Terminate the thread loops
 						cout << "Terminating the server..." << endl;
 						terminate = true;
 						break;
@@ -235,10 +234,13 @@ class ServerThread : public Thread {
 					}
 					//Otherwise if there is activity with the semaphore
 					else if(res->GetFD() != 0){
+						//If this is the disconnect sempahore
 						if(res->GetID() == 3){
 							int i = 0;
+							//Clear the semaphore so it can be signalled again
 							disconnect.Wait();
 							for(auto thread : threads){
+								//Delete the thread that just signalled
 								if(thread->getExit() == true){
 									threads.erase(threads.begin() + i);
 								}
@@ -246,17 +248,18 @@ class ServerThread : public Thread {
 							}
 							continue;
 						}
+						//Otherwise if this is the incorrect semaphore
 						else if(res->GetID() == 2){
 							incorrect.Wait();
 							incorrectCount++;
 							if(incorrectCount < threads.size()) continue;	
 						}
+						//Otherwise if this is the round over semaphore
 						else {
 							//Clear the semaphore signal
 							semaphore.Wait();
 						}
 
-						cout << "Guessed is " << (guessed == true) << endl;
 						//Create a new word
 						string s = GetRandomWord();
 						word = s;
@@ -289,8 +292,10 @@ class ServerThread : public Thread {
 		}
 };
 
+//Server should be run as ./Server [-p portNumber]
 int main(int argc, char* argv[])
 {
+	//Parse the command line arguments
 	int port = 2000;
 	for(int i = 1; i < argc; i++){
 		if(strcmp(argv[i], "-p") == 0){
@@ -301,32 +306,18 @@ int main(int argc, char* argv[])
 	cout << "Started server on port " << port << endl;
 	cout << "Enter any line to close the server" << endl;
 
-	//Define a server and thread for the server
 	try{
+		//Define a server and thread for the server
 		SocketServer server(port);
 		ServerThread serverThread(server);
-//	FlexWait cinWaiter(1, stdin);
-//	cinWaiter.Wait();
-	cin.get();
-	//Close the server and thread
-	//server.Shutdown();
-	return 0;
+		//Wait for user input
+		cin.get();
+		return 0;
 	}
 	catch(string err){
-		cout << "Got error " << err << endl;
+		//Catch any errors
+		cout << "[Error]: " << err << endl;
 	}
-	/*
-	cout << "Created server" << endl;
-	//ServerThread serverThread(server);
-	cout << "Created thread" << endl;
 
-	FlexWait cinWaiter(1, stdin);
-	cinWaiter.Wait();
-	cin.get();
-
-	//Close the server and thread
-	server.Shutdown();
-	return 0;
-	//serverThread.close();
-	*/
+	//Note that server.Shutdown() is implicitly called!
 }
