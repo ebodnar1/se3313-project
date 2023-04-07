@@ -145,7 +145,7 @@ class ServerThread : public Thread {
 		ThreadSem incorrect;				//Semaphore for signalling incorrect guesses
 		int incorrectCount;
 		string word = "sample";				//Chosen word
-		string scoreString = "=======================================\n======= SE 3310 Hangman Team 27 =======\n=======================================";
+		string scoreString = "=======================================\n======= SE 3313 Hangman Team 27 =======\n=======================================";
 		vector<string> words;				//List of words
 		int timer;							//Timer value (controls timeout)
 		ThreadSem disconnect;				//Tracks whether a client has disconnected
