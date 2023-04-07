@@ -194,7 +194,7 @@ class ServerThread : public Thread {
 
 		//Main method
 		virtual long ThreadMain() {
-			Blockable cinWaiter(0);
+			Blockable cinWaiter(8);
 			//Create a waiter that listens for server connections and semaphore changes
 			FlexWait waiter(5, &server, &semaphore, &incorrect, &disconnect, &cinWaiter);
 			while(!terminate) {
@@ -211,7 +211,7 @@ class ServerThread : public Thread {
 						}
 					}
 					//If there is input from the console (meaning the user wants to close the server)
-					else if(res->GetFD() == 0){
+					else if(res->GetFD() == 8){
 						cout << "Terminating the server..." << endl;
 						terminate = true;
 						break;
@@ -307,10 +307,14 @@ int main(int argc, char* argv[])
 	cout << "Enter any line to close the server" << endl;
 
 	try{
+		//Define waiter for console input
+		Blockable cinWaiter(0);
 		//Define a server and thread for the server
 		SocketServer server(port);
 		ServerThread serverThread(server);
 		//Wait for user input
+		FlexWait waiter(1, &cinWaiter);
+		waiter.Wait();
 		cin.get();
 		return 0;
 	}
