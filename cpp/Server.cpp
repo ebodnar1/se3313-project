@@ -81,6 +81,7 @@ class SocketThread : public Thread {
 							if(code == "" || code == "EXIT"){
 								disconnect.Signal();
 								exit = true;
+								break;
 							}
 							//If the word was guessed correctly, update the flag to end the round
 							else if(code == "correct"){
@@ -158,10 +159,6 @@ class ServerThread : public Thread {
 	public:
 		//Constructor - fill the list of words and set the seed for the random number generator
 		ServerThread(SocketServer& server): server(server){
-			semaphore.SetID(1);
-			incorrect.SetID(2);
-			disconnect.SetID(3);
-
 			//Seed the random number generator (so it is different each time) and fill the list of words
 			srand((unsigned int) time(NULL));
 			ifstream file("words.txt");
@@ -190,18 +187,19 @@ class ServerThread : public Thread {
 
 			// Terminate the thread loops
 			terminate = true;
+			cout << "Successfully terminated ServerThread" << endl;
 		}
 
 		//Main method
 		virtual long ThreadMain() {
-			Blockable cinWaiter(8);
 			//Create a waiter that listens for server connections and semaphore changes
-			FlexWait waiter(5, &server, &semaphore, &incorrect, &disconnect, &cinWaiter);
+			FlexWait waiter(4, &server, &semaphore, &incorrect, &disconnect);
 			while(!terminate) {
 				try {
 					//Check the waiter every second
 					Blockable* res = waiter.Wait(1000);
-					
+					if(terminate) break;
+
 					//If there is no new data, increment the timer
 					if(res == 0){
 						timer++;
@@ -210,14 +208,8 @@ class ServerThread : public Thread {
 							semaphore.Signal();
 						}
 					}
-					//If there is input from the console (meaning the user wants to close the server)
-					else if(res->GetFD() == 8){
-						cout << "Terminating the server..." << endl;
-						terminate = true;
-						break;
-					}
 					//Otherwise if there is activity on the server
-					else if(res->GetFD() == 5){
+					else if(res == &server){
 						try{
 							//Accept the connection, create a new thread, and add it to the list of connections
 							Socket* connection = new Socket(server.Accept());
@@ -235,7 +227,7 @@ class ServerThread : public Thread {
 					//Otherwise if there is activity with the semaphore
 					else if(res->GetFD() != 0){
 						//If this is the disconnect sempahore
-						if(res->GetID() == 3){
+						if(res == &disconnect){
 							int i = 0;
 							//Clear the semaphore so it can be signalled again
 							disconnect.Wait();
@@ -249,13 +241,13 @@ class ServerThread : public Thread {
 							continue;
 						}
 						//Otherwise if this is the incorrect semaphore
-						else if(res->GetID() == 2){
+						else if(res == &incorrect){
 							incorrect.Wait();
 							incorrectCount++;
 							if(incorrectCount < threads.size()) continue;	
 						}
 						//Otherwise if this is the round over semaphore
-						else {
+						else if(res == &semaphore) {
 							//Clear the semaphore signal
 							semaphore.Wait();
 						}
@@ -316,6 +308,8 @@ int main(int argc, char* argv[])
 		FlexWait waiter(1, &cinWaiter);
 		waiter.Wait();
 		cin.get();
+		serverThread.close();
+		cout << "Closing Server..." << endl;
 		return 0;
 	}
 	catch(string err){
